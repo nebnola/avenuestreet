@@ -54,8 +54,8 @@ load.city <- function(city.name, bbox = '', overpass.url){
   # Get all the ways in a given city which end in "Street" or "Avenue"
   # and return a data frame
   
-  streets <- get.streets(city.name, bbox, "Street$", overpass.url)
-  avenues <- get.streets(city.name, bbox, "Avenue$", overpass.url)
+  streets <- get.streets(city.name, "Street$", bbox, overpass.url)
+  avenues <- get.streets(city.name, "Avenue$", bbox, overpass.url)
   
   streets$name <- "Street"
   avenues$name <- "Avenue"
