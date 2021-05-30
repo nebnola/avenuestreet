@@ -63,9 +63,6 @@ load.city <- function(city.name, bbox = '', overpass.url){
   return(rbind(streets, avenues))
 }
 
-allstreets <- load.city("Chicago", "(41.4, -88.5, 42.5, -87.0)")
-manhattan <- load.city("Manhattan", "(40.546678,-74.450912,41.009439,-73.585739)")
-
 
 adjust.lat <- function(streets){
   # adjust latitude such that lon and lat are locally a square grid
@@ -149,5 +146,23 @@ plot_directions <- function(streets){
   return(p)
 } 
 
-m <- plot_map(manhattan)
-c <- plot_directions(manhattan)
+export_map <- function(streets, filename, width=10){
+  # export map in a convenient format
+  
+  # first, determine aspect ratio of plot
+  adjusted <- adjust.lat(streets)
+  maxwidth = max(adjusted$lon) - min(adjusted$lon)
+  maxheight <- max(adjusted$lat) - min(adjusted$lat)
+  ratio = maxheight/maxwidth
+  height = ratio*width
+  
+  map <- plot_map(streets) + theme(legend.position = "none")
+  ggsave(filename, plot=map, width = width, height = height, units="cm")
+}
+
+# Example
+# manhattan <- load.city("Manhattan", "(40.546678,-74.450912,41.009439,-73.585739)")
+# export_map(manhattan, "img/manhattan_map.png")
+# compass <- plot_directions(manhattan) + theme(legend.position = "bottom",
+#                                               rect = element_rect(fill = "transparent"))
+# ggsave("img/manhattan_compass.png", plot=compass, width = 6, height = 8, units="cm", dpi = 500, bg="transparent")
