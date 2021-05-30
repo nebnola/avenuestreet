@@ -73,6 +73,8 @@ adjust.lat <- function(streets){
 }
 
 plot_map <- function(streets){
+  # draw a street grid and colour it by street name
+  
   streets <- adjust.lat(streets)  
   p <- ggplot(streets, aes(x=lon, y=lat, colour = name)) +
     geom_line(aes(group = id), size=0.2) +
@@ -88,7 +90,11 @@ plot_map <- function(streets){
 }
 
 plot_directions <- function(streets){
+  # plot a compass indicating the directions in which streets run
+  
+  # stretch coordinates so that angles are roughly correct
   streets <- adjust.lat(streets)
+  # group by street and calculate difference between neighbouring points
   diff <- streets %>%
     group_by(id) %>%
     mutate(latdiff = append(NA, diff(lat)),
@@ -97,7 +103,8 @@ plot_directions <- function(streets){
            lon = NULL) %>%
     drop_na(latdiff)
   
-  diff$angle <- atan2(-diff$londiff, -diff$latdiff) / pi * 180 + 180  # geographic angle (clockwise from North)
+  # geographic angle (clockwise from North)
+  diff$angle <- atan2(-diff$londiff, -diff$latdiff) / pi * 180 + 180
   diff$length <- sqrt(diff$latdiff^2 + diff$londiff^2)
   diff <- diff %>%
     ungroup() %>%
@@ -106,6 +113,8 @@ plot_directions <- function(streets){
   bw = 10   # bin width
   hb = bw/2 # half bin width
   
+  # bin data manually since geom_freqpoly() doesn't play nice with polar coordinates
+  # pins are centered around 0, so first wrap around first half of the first bin
   diff$angle <- ifelse(diff$angle > 360 - hb, diff$angle - 360, diff$angle)
   dirs <- diff %>% count(angle = cut(angle,
                                      breaks = seq(-hb,360-hb,bw),
@@ -113,7 +122,9 @@ plot_directions <- function(streets){
                                      include.lowest= TRUE,
                                      right=FALSE),
                          wt = length)
+  # convert from factor to numeric
   dirs$angle <- as.numeric(levels(dirs$angle))[dirs$angle]
+  # Make angles symmetric w.r.t 180° rotation (it doesn't matter if it is oriented 10° or 190°)
   reversedirs <- dirs
   reversedirs$angle <- (reversedirs$angle + 180) %% 360
   dirs <- inner_join(dirs, reversedirs, by = c("name", "angle")) %>%
@@ -121,11 +132,12 @@ plot_directions <- function(streets){
            n.x = NULL,
            n.y = NULL)
   
+  # repeat the value of 0° at 360° so the line closes nicely
   wraparound <- dirs %>% filter(angle == min(angle))
   wraparound$angle <- wraparound$angle + 360
   dirs <- rbind(dirs, wraparound)
   
-  
+  # make labels N, E, S, W instead of 0°, 90°, 180°, 270°
   direction_formatter <- function(deg){
     cardinals <- c("N", "E", "S", "W")
     return(ifelse(deg%%90 == 0, cardinals[(deg %% 360)/90 + 1], deg))
